@@ -339,3 +339,6 @@ This is MBR partition style ...
 PART1_ACTIVE=80  PART2_ACTIVE=00
 mounting part2 ....
 mounting part2 success
+############# Ventoy2Disk -v ################
+Вт 08 дек 2020 21:43:13 +06
+no need to decompress tools

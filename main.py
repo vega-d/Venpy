@@ -1,9 +1,8 @@
 try:
     import gi
-    import elevate
 except Exception as e:
     if type(e) == ModuleNotFoundError:
-        print('no gi and elevate libraries were found!\n Attempting self install.')
+        print('no GTK libraries were found!\n Attempting self install.')
         try:
             import os
 
@@ -13,7 +12,6 @@ except Exception as e:
             exit(0)
         print('Successfully installed dependencies. Continuing.')
         import gi
-        import elevate
     else:
         raise ModuleNotFoundError
 
@@ -25,9 +23,9 @@ import sys
 print(os.getcwd())
 
 if os.geteuid() == 0:
-    print("We're root!")
+    print("Running as root, continuing.")
 else:
-    print("We're not root.")
+    print("Not launched as root, asking for root.\nThis is essential for app to work!")
     subprocess.call(['sudo', 'python3', *sys.argv])
     sys.exit()
 
@@ -158,7 +156,7 @@ class Venpy(Gtk.Window):
         print('executing', cmd)
         import subprocess
         flashing = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        flashing.communicate('y')
+        # flashing.communicate('y')
         # output = flashing.communicate()[0].decode("utf-8").split('\n')
         # if len(output) > 7:
         #     output = output[7:]
