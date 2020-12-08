@@ -1,7 +1,35 @@
-import gi
-import os
+try:
+    import gi
+    import elevate
+except Exception as e:
+    if type(e) == ModuleNotFoundError:
+        print('no gi and elevate libraries were found!\n Attempting self install.')
+        try:
+            import os
+
+            os.system('pip3 install pygobject elevate')
+        except Exception as e:
+            print('Failed self installtion. Trace:\n', e)
+            exit(0)
+        print('Successfully installed dependencies. Continuing.')
+        import gi
+        import elevate
+    else:
+        raise ModuleNotFoundError
 
 # os.system("ls -l")
+import os
+import subprocess
+import sys
+
+print(os.getcwd())
+
+if os.geteuid() == 0:
+    print("We're root!")
+else:
+    print("We're not root.")
+    subprocess.call(['sudo', 'python3', *sys.argv])
+    sys.exit()
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -107,10 +135,37 @@ class Venpy(Gtk.Window):
         self.secure_boot_enabled = self.secure_boot_checkbox.get_active()
         self.GPT_partitioning_enabled = self.GPT_partitioning_checkbox.get_active()
 
-        print('secure boot support is', self.secure_boot_enabled, 'and gpt partitioning is', self.GPT_partitioning_enabled)
+        print('secure boot support is', self.secure_boot_enabled, 'and gpt partitioning is',
+              self.GPT_partitioning_enabled)
 
     def flash(self, widget):
-        pass
+        cmd = ["gnome-terminal", '--wait', "--", 'sudo', "sh", "Ventoy2Disk.sh"]
+        if self.mode_selected:
+            if self.mode_selected == 'install':
+                cmd.append('-i')
+            if self.mode_selected == 'finstall':
+                cmd.append('-I')
+            if self.mode_selected == 'rinstall':
+                cmd.append('-u')
+            cmd.append(self.disk_selected)
+            if self.GPT_partitioning_enabled:
+                cmd.append('-g')
+            if self.secure_boot_enabled:
+                cmd.append('-s')
+            # cmd += '&& read -n 1 -p Continue?'.split()
+        else:
+            pass
+        print('executing', cmd)
+        import subprocess
+        flashing = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        flashing.communicate('y')
+        # output = flashing.communicate()[0].decode("utf-8").split('\n')
+        # if len(output) > 7:
+        #     output = output[7:]
+        # for i in output:
+        #     i = i.strip(r'\x1b[0m')
+        #     i = i.strip(r'\x1b[31m')
+        # print([output])
 
 
 win = Venpy()
