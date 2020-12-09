@@ -20,7 +20,7 @@ import os
 import subprocess
 import sys
 
-print(os.getcwd())
+# print(os.getcwd())
 
 if os.geteuid() == 0:
     print("Running as root, continuing.")
