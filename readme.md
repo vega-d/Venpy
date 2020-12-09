@@ -9,7 +9,7 @@ Everything is as simple as pie. Just clone the repository with git or download s
 Unpack it and launch it with python 3. It will install needed python libraries if those are missing. 
 
 #### Make sure you have pip3 installed!
-Comes with 1.0.29 [Ventoy](ventoy.net). Pull requests are welcome!
+Comes with 1.0.29 [Ventoy](https://www.ventoy.net/en/index.html). Pull requests are welcome!
 
 ## Plans for later:
 - Make Ventoy updatable within GUI.
