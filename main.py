@@ -133,9 +133,7 @@ class Venpy(Gtk.Window):
             buttons=Gtk.ButtonsType.CANCEL,
             text=text,
         )
-        dialog.format_secondary_text(
-            text_secondary
-        )
+        dialog.format_secondary_text(text_secondary)
         dialog.run()
         # print("ERROR dialog closed")
         dialog.destroy()
@@ -180,6 +178,8 @@ class Venpy(Gtk.Window):
             self.mode_selected = modes[int(name) - 1]
             print("Ventoy will", self.mode_selected)
 
+            self.GPT_partitioning_checkbox.enabled(self.mode_selected != "rinstall")
+
     def on_checked(self, widget, data=None):
         self.secure_boot_enabled = self.secure_boot_checkbox.get_active()
         self.GPT_partitioning_enabled = self.GPT_partitioning_checkbox.get_active()
@@ -197,7 +197,7 @@ class Venpy(Gtk.Window):
             if self.mode_selected == 'rinstall':
                 cmd.append('-u')
             cmd.append(self.disk_selected)
-            if self.GPT_partitioning_enabled:
+            if self.GPT_partitioning_enabled and self.mode_selected != 'rinstall':
                 cmd.append('-g')
             if self.secure_boot_enabled:
                 cmd.append('-s')
