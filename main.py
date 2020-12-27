@@ -36,69 +36,118 @@ from gi.repository import Gtk
 class Venpy(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Ventoy")
+        self.terminal_command = None
         self.set_border_width(10)
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
-        self.refresh_button = Gtk.Button(label="detect disks")
-        self.refresh_button.connect("clicked", self.on_button_clicked)
-        vbox.pack_start(self.refresh_button, False, False, 0)
+        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         self.disks_found = ['no disks detected']
-
         self.disks_combo = Gtk.ComboBoxText()
         self.disks_combo.set_entry_text_column(0)
         self.disks_combo.connect("changed", self.on_disk_chosen)
-        self.update_disk_combobox()
+        self.disks_combo.set_active(1)
+        self.vbox.pack_start(self.disks_combo, False, False, 0)
 
-        self.disks_combo.set_active(0)
-        vbox.pack_start(self.disks_combo, False, False, 0)
+        self.refresh_button = Gtk.Button(label="refresh")
+        self.refresh_button.connect("clicked", self.on_disks_update)
+        self.vbox.pack_start(self.refresh_button, False, False, 0)
 
-        hbox = Gtk.Box(spacing=6)
+        self.hbox = Gtk.Box(spacing=6)
 
         button1 = Gtk.RadioButton.new_with_label_from_widget(None, "Install")
         button1.connect("toggled", self.on_mode_chosen, "1")
-        hbox.pack_start(button1, False, False, 0)
+        self.hbox.pack_start(button1, False, False, 0)
 
         button2 = Gtk.RadioButton.new_from_widget(button1)
         button2.set_label("Force install")
         button2.connect("toggled", self.on_mode_chosen, "2")
-        hbox.pack_start(button2, False, False, 0)
+        self.hbox.pack_start(button2, False, False, 0)
 
         button3 = Gtk.RadioButton.new_with_mnemonic_from_widget(button1, "Update")
         button3.connect("toggled", self.on_mode_chosen, "3")
-        hbox.pack_start(button3, False, False, 0)
+        self.hbox.pack_start(button3, False, False, 0)
 
-        vbox.pack_start(hbox, False, False, 0)
-        hbox2 = Gtk.Box(spacing=6)
+        self.vbox.pack_start(self.hbox, False, False, 0)
+        self.hbox2 = Gtk.Box(spacing=6)
 
         self.secure_boot_checkbox = Gtk.CheckButton(label="Secure boot support")
         self.secure_boot_checkbox.connect("toggled", self.on_checked)
-        hbox2.pack_start(self.secure_boot_checkbox, False, False, 0)
+        self.hbox2.pack_start(self.secure_boot_checkbox, False, False, 0)
+
         self.GPT_partitioning_checkbox = Gtk.CheckButton(label="Use GPT partitioning")
         self.GPT_partitioning_checkbox.connect("toggled", self.on_checked)
-        hbox2.pack_start(self.GPT_partitioning_checkbox, False, False, 0)
+        self.hbox2.pack_start(self.GPT_partitioning_checkbox, False, False, 0)
 
-        vbox.pack_start(hbox2, False, False, 0)
+        text_expander = Gtk.Expander(label="Advanced Settings")
+        text_expander.set_expanded(False)
+        self.vbox.add(text_expander)
+        text_expander.add(self.hbox2)
 
         self.start_button = Gtk.Button(label="Start")
         self.start_button.connect("clicked", self.flash)
-        vbox.pack_start(self.start_button, False, False, 0)
+        self.vbox.pack_start(self.start_button, False, False, 0)
 
-        self.add(vbox)
+        self.add(self.vbox)
 
-        self.disk_selected = ''
+        self.disk_selected = 'Select Disk'
         self.mode_selected = 'install'
         self.secure_boot_enabled = False
         self.GPT_partitioning_enabled = False
+        self.advanced_settings_enabled = False
+
+        # self.update_disk_combobox()
+        self.on_disks_update()
+        if not self.check_for_terminal():
+            self.error_dialog(widget=self, text="No terminal found",
+                              text_secondary="Please install a supported terminal app.\nApp will not work correctly.")
+
+    def check_for_terminal(self):
+        list_of_terminals = [
+            ["gnome-terminal", ["gnome-terminal", "--"]],
+            ["konsole", ["konsole", "-e"]],
+            ["xfce4-terminal", ["xfce4-terminal", "-e"]],
+            ["deepin-terminal", ["deepin-terminal", "-e"]]
+        ]
+        for term in list_of_terminals:
+            supported = True
+            try:
+                f = open("/usr/bin/" + term[0])
+            except Exception:
+                supported = False
+
+            finally:
+                if supported:
+                    f.close()
+            print("checking for", term[0], 'and result for support is', supported)
+            if supported:
+                print('setting', term[0], "as terminal to use.")
+                self.terminal_command = term[1]
+                return True
+        print('no supported terminals found')
+        return False
+
+    def error_dialog(self, widget, text, text_secondary):
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            flags=0,
+            message_type=Gtk.MessageType.ERROR,
+            buttons=Gtk.ButtonsType.CANCEL,
+            text=text,
+        )
+        dialog.format_secondary_text(
+            text_secondary
+        )
+        dialog.run()
+        # print("ERROR dialog closed")
+        dialog.destroy()
 
     def update_disk_combobox(self):
         model = self.disks_combo.get_model()
         model.clear()
-        if len(self.disks_found) > 1:
+        if len(self.disks_found) > 0:
             for i in self.disks_found:
                 self.disks_combo.append_text("%s - %s" % i)
 
-    def on_button_clicked(self, widget):
+    def on_disks_update(self, widget=None):
         import subprocess
         test1 = subprocess.Popen(["lsblk", "-o", "PATH"], stdout=subprocess.PIPE)
         test2 = subprocess.Popen(["lsblk", "-o", "TYPE"], stdout=subprocess.PIPE)
@@ -122,6 +171,8 @@ class Venpy(Gtk.Window):
         if text is not None:
             self.disk_selected = text.split(' - ')[0]
             print("Selected disk:", self.disk_selected)
+        else:
+            print("no disk selected")
 
     def on_mode_chosen(self, button, name):
         if button.get_active():
@@ -133,11 +184,11 @@ class Venpy(Gtk.Window):
         self.secure_boot_enabled = self.secure_boot_checkbox.get_active()
         self.GPT_partitioning_enabled = self.GPT_partitioning_checkbox.get_active()
 
-        print('secure boot support is', self.secure_boot_enabled, 'and gpt partitioning is',
-              self.GPT_partitioning_enabled)
+        print('secure boot support is', self.secure_boot_enabled, '; gpt partitioning is',
+              self.GPT_partitioning_enabled, '; advanced settings are', self.advanced_settings_enabled)
 
     def flash(self, widget):
-        cmd = ["gnome-terminal", '--wait', "--", 'sudo', "sh", "Ventoy2Disk.sh"]
+        cmd = self.terminal_command + ['sudo', "sh", "Ventoy2Disk.sh"]
         if self.mode_selected:
             if self.mode_selected == 'install':
                 cmd.append('-i')
