@@ -342,3 +342,5 @@ mounting part2 success
 ############# Ventoy2Disk -v ################
 Вт 08 дек 2020 21:43:13 +06
 no need to decompress tools
+############# Ventoy2Disk  [x86_64] ################
+Sun Jun 13 07:28:04 PM +06 2021
